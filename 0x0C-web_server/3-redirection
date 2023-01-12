@@ -15,8 +15,9 @@ printf %s "server {
     listen [::]:80 default_server;
     root   /etc/nginx/html;
     index  index.html index.htm;
+    redirect_me redirect.html redirect.html
     location /redirect_me {
-        return https://tweeter.com/;
+        return https://youtube.com/;
     }
 }" > /etc/nginx/html/redirect.html
 
