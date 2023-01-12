@@ -18,6 +18,6 @@ printf %s "server {
     location /redirect_me {
         return https://tweeter.com/;
     }
-}" > /etc/nginx/sites-available/default
+}" > /etc/nginx/html/redirect.html
 
 sudo service nginx restart
