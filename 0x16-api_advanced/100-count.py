@@ -1,72 +1,68 @@
 #!/usr/bin/python3
 """
-Function that queries the Reddit API and prints
-the top ten hot posts of a subreddit
+Module parses titles of subreddits to count word occurances
 """
 import requests
+import re
 
 
-def recurse(subreddit, hot_list=[], after=""):
-    """List containing the titles of all hot articles for a given subreddit"""
-    url = 'https://www.reddit.com/r/{}/hot.json'.format(subreddit)
-    res = requests.get(url, headers={'User-Agent': 'AngentMEGO'},
-                       params={'after': after})
-
-    if after is None:
-        return hot_list
-
-    if res.status_code == 200:
-        res = res.json()
-        after = res.get('data').get('after')
-        hots = res.get('data').get('children')
-        hot_list += list(map(lambda elm: elm.get('data').get('title'), hots))
-        return recurse(subreddit, hot_list, after)
-    return None
-
-
-def my_sorted(my_dict):
-    """definition"""
-    result = []
-    items_list = my_dict.items()
-    items_list = sorted(items_list, key=lambda item: item[1])
-    items_list = list(reversed(items_list))
-    i = 0
-    j = 0
-    while len(result) < len(items_list):
-        if j <= len(items_list) - 2 and\
-                items_list[j][1] == items_list[j + 1][1]:
-            while j <= len(items_list) - 2 and\
-                    items_list[j][1] == items_list[j + 1][1]:
-                j += 1
-            sub = sorted(items_list[i:j + 1], key=lambda item: item[0])
-            result += sub
-            i = j + 1
-            j += 1
-            continue
-        result.append(items_list[j])
-        i += 1
-        j += 1
-    return dict(result)
-
-
-def count_words(subreddit, word_list):
+def count_words(subreddit, word_list, after=None, word_dict={}):
+    """`count_words` populates `word_dict` with count of words
+    Args:
+        subreddit (str): Name of subreddit to query info
+        word_list (list, optional): List of words to search in subreddit
+        titles
+        after (str, optional): value of query string used to traverse
+        paginated json response
+        word_dict (dictionary, optional): Dictionary to hold repetition count
+        of words found in `word_list`
+    Returns:
+        None
     """
-    parses the title of all hot articles, and prints a sorted count of
-    given keywords
+    try:
+        if len(word_dict) != 0 and after is None:
+            return None
+        base_url = (
+            "https://www.reddit.com/r/{}/hot.json{}"
+            .format(
+                subreddit,
+                "?after="+after if after is not None else ""
+            )
+        )
+        res = requests.get(
+            base_url,
+            headers={"User-agent": "PostmanRuntime/7.28.4"},
+            allow_redirects=False
+        )
+        for child in res.json().get("data").get("children"):
+            search_list(
+                word_list,
+                word_dict,
+                child.get("data").get("title")
+            )
+
+        after = res.json().get("data").get("after")
+        count_words(subreddit, word_dict, after, word_dict)
+        if len(word_dict) != 0:
+            for k, v in word_dict.items():
+                print("{}: {}".format(k, v))
+            word_dict.clear()
+    except Exception as e:
+        return None
+
+
+def search_list(word_list, word_dict, title):
+    """Search `title` for words in `word_list` and populate `word_dict`
+    Args:
+        word_list (list): List of words to search in subreddit
+        titles
+        word_dict (dictionary): Dictionary to hold repetition count
+        of words found in `word_list`
+        title (str): Subreddit title to be searched
     """
-    dict_word = {}
-    word_list = list(map(lambda word: word.lower(), word_list))
-
-    for word in word_list:
-        dict_word[word] = 0
-    titles = recurse(subreddit, [])
-    titles = (' '.join(titles)).lower()
-    titles = titles.split(" ")
-
-    for word in word_list:
-        dict_word[word] += titles.count(word)
-    sort_dict = my_sorted(dict_word)
-
-    for key, value in sort_dict.items():
-        if value > 0:
-            print(f"{key}: {value}")
+    for word in title.split():
+        if word.lower() in " ".join(word_list).lower().split():
+            if word_dict.get(word.lower()):
+                word_dict[word.lower()] += 1
+            else:
+                word_dict[word.lower()] = 1
