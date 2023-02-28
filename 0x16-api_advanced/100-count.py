@@ -1,9 +1,8 @@
 #!/usr/bin/python3
-"""
-Function that queries the Reddit API and prints
-the top ten hot posts of a subreddit
-"""
+'''A module containing functions for working with the Reddit API.
+'''
 import requests
+
 
 def sort_histogram(histogram={}):
     '''Sorts and prints the given histogram.
